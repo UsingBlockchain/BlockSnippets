@@ -1,0 +1,38 @@
+{
+    "name": "@ubcdigital/article4us",
+    "preferGlobal": true,
+    "version": "0.3.0",
+    "author": "Grégory Saive <greg@evias.be>",
+    "description": "Disposable Snippets Library for UBC:Digital Magazine",
+    "license": "Apache-2.0",
+    "engines": {
+        "node": ">=0.10"
+    },
+    "scripts": {
+        "build": "rimraf build/ && tsc"
+    },
+    "dependencies": {
+        "@types/node": "^14.14.22",
+        "chalk": "^2.3.0",
+        "clime": "^0.5.9",
+        "rimraf": "^3.0.0",
+        "rxjs": "^6.5.3",
+        "utf8": "^2.1.2"
+    },
+    "devDependencies": {
+        "@types/lodash": "^4.14.144",
+        "@types/mocha": "^2.2.44",
+        "readline-sync": "^1.4.10",
+        "path": "^0.12.7",
+        "typescript": "~3.8.3"
+    },
+    "main": "index.js",
+    "bin": {
+        "symbol-contracts": "./bin/article4us"
+    },
+    "bugs": "https://github.com/UsingBlockchain/Article4Us/issues",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/UsingBlockchain/Article4Us.git"
+    }
+}
