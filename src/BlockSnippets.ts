@@ -15,26 +15,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-import * as readlineSync from 'readline-sync';
+import {CLI, Shim} from 'clime';
+import * as Path from 'path';
 
-/**
- * Generic command line argument reader.
- *
- * @param options 
- * @param key 
- * @param secondSource 
- * @param promptText 
- * @param readlineDependency
- * @return {any}
- */
-export const OptionsResolver = (
-    options: any,
-    key: string,
-    secondSource: () => string | undefined,
-    promptText: string,
-    readlineDependency?: any
-): any => {
-    const readline = readlineDependency || readlineSync;
-    return options[key] !== undefined ? options[key] : (secondSource() 
-        || readline.question(promptText));
-};
+// The second parameter is the path to folder that contains command modules.
+const cli = new CLI('BlockSnippets', Path.join(__dirname, 'posts'));
+
+// Clime in its core provides an object-based command-line infrastructure.
+// To have it work as a common CLI, a shim needs to be applied:
+const shim = new Shim(cli);
+shim.execute(process.argv);

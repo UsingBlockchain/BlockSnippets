@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /**
  * Part of BlockSnippets
  * Copyright (C) 2021 Using Blockchain Ltd, Reg No.: 12658136, United Kingdom
@@ -15,26 +17,5 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-import * as readlineSync from 'readline-sync';
 
-/**
- * Generic command line argument reader.
- *
- * @param options 
- * @param key 
- * @param secondSource 
- * @param promptText 
- * @param readlineDependency
- * @return {any}
- */
-export const OptionsResolver = (
-    options: any,
-    key: string,
-    secondSource: () => string | undefined,
-    promptText: string,
-    readlineDependency?: any
-): any => {
-    const readline = readlineDependency || readlineSync;
-    return options[key] !== undefined ? options[key] : (secondSource() 
-        || readline.question(promptText));
-};
+require(__dirname + '/build/BlockSnippets.js')

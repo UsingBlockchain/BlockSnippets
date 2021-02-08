@@ -1,22 +1,23 @@
 /**
- * 
- * Copyright 2020-2021 Grégory Saive for Using Blockchain Ltd
- * (https://using-blockchain.org), All rights reserved.
- * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * 
- *     http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Part of BlockSnippets
+ * Copyright (C) 2021 Using Blockchain Ltd, Reg No.: 12658136, United Kingdom
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 import {command, metadata, option} from 'clime';
 import chalk from 'chalk';
+import * as fs from 'fs';
 
 import {OptionsResolver} from '../kernel/OptionsResolver';
 import {Snippet, SnippetInputs} from '../kernel/Snippet';
@@ -24,15 +25,15 @@ import {description} from './default'
 
 export class ExecuteSnippetInputs extends SnippetInputs {
   @option({
-    flag: 'p',
-    description: 'The post ID.',
+    flag: 'n',
+    description: 'The blockchain network (e.g. "bitcoin", "symbol", "nem").',
   })
-  post: string;
+  network: string;
   @option({
-    flag: 'o',
-    description: 'Order of the snippet.',
+    flag: 's',
+    description: 'Name of the snippet.',
   })
-  order: string;
+  snippet: string;
 }
 
 @command({
@@ -86,18 +87,18 @@ export default class extends Snippet {
     // -------------------
 
     try {
-      inputs['post'] = OptionsResolver(inputs,
-        'post',
+      inputs['network'] = OptionsResolver(inputs,
+        'network',
         () => { return ''; },
-        '\nEnter the post ID: ');
-    } catch (err) { this.error('Please, enter a post ID.'); }
+        '\nEnter the blockchain network name (e.g. "bitcoin"): ');
+    } catch (err) { this.error('Please, enter a blockchain network name.'); }
 
     try {
-      inputs['order'] = OptionsResolver(inputs,
-        'order',
+      inputs['snippet'] = OptionsResolver(inputs,
+        'snippet',
         () => { return ''; },
-        '\nEnter the number of the snippet: ');
-    } catch (err) { this.error('Please, enter a number set.'); }
+        '\nEnter the name of the snippet: ');
+    } catch (err) { this.error('Please, enter a snippet name.'); }
 
     // --------------------------------
     // STEP 3: Execute Contract Actions
@@ -117,13 +118,30 @@ export default class extends Snippet {
     inputs: SnippetInputs,
   ): Promise<any> {
 
-    console.log('')
-    console.log(chalk.yellow('Awaiting magic...'))
-    console.log('')
+    const networksLocation = __dirname + '/../snippets/';
+    const networks = fs.readdirSync(networksLocation);
 
-    // announce the aggregate transaction
+    // - validate network input
+    if (! networks.includes(inputs['network'])) {
+      return new Promise((resolve, reject) => {
+        return resolve(chalk.red('Network with name "' + inputs['network'] + '" does not exist.'));
+      });
+    }
+
+    const location = networksLocation + inputs['network'] + '/';
+    const snippet  = inputs['snippet'].replace(/\.ts$/, '');
+
+    // - validate snippet input
+    if (! fs.existsSync(location + snippet + '.js')) {
+      return new Promise((resolve, reject) => {
+        return resolve(chalk.red('Snippet with name "' + inputs['snippet'] + '" does not exist.'));
+      });
+    }
+
+    // - execute snippet
     return new Promise((resolve, reject) => {
-      return resolve(true);
-    })
+      require(location + snippet + '.js');
+      return resolve('');
+    });
   }
 }
