@@ -7,15 +7,17 @@ export const description = `
      (o o)               (o o) 
     (  V  ) UBC Digital (  V  )
     --m-m-----------------m-m--
+    ----- MiniSupplyChain -----
+    --m-m-----------------m-m--
 `;
 
 export const subcommands = [
   {
-    name: 'ExecuteSnippet',
-    brief: 'Disposable Smart Snippet used in UBC:Digital Magazine',
+    name: 'Create',
+    brief: 'Tokenize your supply chain with Create and Symbol blockchain',
   },
   {
-    name: 'MiniSupplyChain',
-    brief: 'Digital Supply Chain Smart Snippet used in UBC:Digital Magazine',
+    name: 'Sale',
+    brief: 'Track the sale of a product in your tokenized supply chain with Symbol blockchain',
   }
 ];

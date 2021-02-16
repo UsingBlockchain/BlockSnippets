@@ -46,6 +46,7 @@ npm run build
 ./app ExecuteSnippet -n symbol -s identities
 ./app ExecuteSnippet -n symbol -s products
 ./app ExecuteSnippet -n symbol -s streaming
+./app ExecuteSnippet -n symbol -s supply-chain
 ```
 
 ## Donations / Pot de vin
@@ -55,8 +56,17 @@ Donations can also be made with cryptocurrencies and will be used for running th
     NEM:       NB72EM6TTSX72O47T3GQFL345AB5WYKIDODKPPYW
     Bitcoin:   3EVqgUqYFRYbf9RjhyjBgKXcEwAQxhaf6o
 
+## Sponsor us
+
+    Paypal:    https://paypal.me/usingblockchainltd
+    Patreon:   https://patreon.com/usingblockchainltd
+    Github:    https://github.com/sponsors/UsingBlockchain
+
+## Credits
+
 | Username | Role |
 | --- | --- |
+| [Using Blockchain Ltd](https://using-blockchain.org) | Product Owner |
 | [eVias](https://github.com/evias) | Project Lead |
 
 ## License

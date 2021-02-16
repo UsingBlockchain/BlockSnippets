@@ -1,31 +1,51 @@
 /**
- * Part of BlockSnippets shared under AGPLv3
+ * Part of BlockSnippets shared under LGPL-3.0
  * Copyright (C) 2021 Using Blockchain Ltd, Reg No.: 12658136, United Kingdom
  */
+import chalk from 'chalk'
 import {
+  Account,
   Address,
   AggregateTransaction,
   Deadline,
+  Mosaic,
   MosaicDefinitionTransaction,
   MosaicFlags,
   MosaicId,
   MosaicSupplyChangeAction,
   MosaicSupplyChangeTransaction,
   MosaicNonce,
-  NamespaceRegistrationTransaction,
   NetworkType,
+  PlainMessage,
   Transaction,
+  TransferTransaction,
   UInt64,
 } from 'symbol-sdk'
 import { ExtendedKey, MnemonicPassPhrase, Network, Wallet } from 'symbol-hd-wallets'
 
 /**
+ * Display usage information.
+ */
+export const usage = (): void => {
+  console.log('')
+  console.log(chalk.green('USAGE'))
+  console.log('')
+  console.log('  ' + chalk.bold('MiniSupplyChain <subcommand> [SKU]'))
+  console.log('')
+  console.log(chalk.green('SUBCOMMANDS'))
+  console.log('')
+  console.log('  ' + chalk.bold('create') + chalk.white(' - Creates the digital supply chain with tokenized products.'))
+  console.log('  ' + chalk.bold('sale') + chalk.white('   - Execute a sale of a product by SKU.'))
+  console.log('')
+}
+
+/**
  * Create an account with mnemonic pass phrase and
  * return its public key in hexadecimal format.
  *
- * @param   {MnemonicPassPhrase} mnemonic   The mnemonic pass phrase (12,16,24 words)
- * @param   {string}             path       (Optional) The address derivation path.
- * @return  {string}  Returns the public key of the derived account.
+ * @param   MnemonicPassPhrase mnemonic   The mnemonic pass phrase (12,16,24 words)
+ * @param   string             path       (Optional) The address derivation path.
+ * @return  string  Returns the public key of the derived account.
  */
 export const getPublicKey = (
   mnemonic: MnemonicPassPhrase,
@@ -43,9 +63,9 @@ export const getPublicKey = (
  * Create an account with mnemonic pass phrase and
  * return its private key in hexadecimal format.
  *
- * @param   {MnemonicPassPhrase} mnemonic   The mnemonic pass phrase (12,16,24 words)
- * @param   {string}             path       (Optional) The address derivation path.
- * @return  {string}  Returns the private key of the derived account.
+ * @param   MnemonicPassPhrase mnemonic   The mnemonic pass phrase (12,16,24 words)
+ * @param   string             path       (Optional) The address derivation path.
+ * @return  string  Returns the private key of the derived account.
  */
 export const getPrivateKey = (
   mnemonic: MnemonicPassPhrase,
@@ -60,15 +80,51 @@ export const getPrivateKey = (
 }
 
 /**
- * Create an account with mnemonic pass phrase and
- * return a prepared transaction for the creation
- * of mosaic, adding a namespace to refer to the 
- * created assets by name.
+ * Create an account address around \a mnemonic
+ * for network type \a networkType.
  *
- * @param   {Address} ownerAddress  The products owner address
- * @param   {string}  productName   The product name
- * @param   {number}  countItems    The number of items
- * @return  {string}  Returns the public key of the derived account.
+ * @param   MnemonicPassPhrase  mnemonic      The mnemonic pass phrase (12,16,24 words)
+ * @param   NetworkType         networkType   The symbol network type.
+ * @return  Address             The address of said account.
+ */
+export const getAddress = (
+  mnemonic: MnemonicPassPhrase,
+  networkType: NetworkType = NetworkType.TEST_NET
+): Address => {
+  return Address.createFromPublicKey(
+    getPublicKey(mnemonic),
+    networkType,
+  )
+}
+
+/**
+ * Create a signer account around \a mnemonic
+ * for network type \a networkType.
+ *
+ * @warn    This method returns sensitive information.
+ * @param   MnemonicPassPhrase  mnemonic      The mnemonic pass phrase (12,16,24 words)
+ * @param   NetworkType         networkType   The symbol network type.
+ * @return  Account             The sensitive information of an account (including its' private key).
+ */
+export const getSigner = (
+  mnemonic: MnemonicPassPhrase,
+  networkType: NetworkType = NetworkType.TEST_NET,
+): Account => {
+  return Account.createFromPrivateKey(
+    getPrivateKey(mnemonic),
+    networkType,
+  );
+}
+
+/**
+ * Returns a prepared transaction for the creation
+ * of mosaics to refer to the digital items.
+ *
+ * @param   Address       ownerAddress  The products owner address
+ * @param   number        countItems    The number of items
+ * @param   NetworkType   networkType   (Optional) The symbol network type.
+ * @param   number        maxFee        (Optional) The symbol network transaction fee.
+ * @return  string  Returns the public key of the derived account.
  */
 export const getMosaicCreationTransactions = (
   ownerAddress: Address,
@@ -109,11 +165,40 @@ export const getMosaicCreationTransactions = (
 }
 
 /**
+ * Returns a prepared transaction for the transfer
+ * of mosaics on a Symbol network.
+ *
+ * @param   Address       recipient
+ * @param   MosaicId      mosaicId 
+ * @param   number        amount
+ * @param   NetworkType   networkType   (Optional) The symbol network type.
+ * @param   number        maxFee        (Optional) The symbol network transaction fee.
+ * @return  TransferTransaction
+ */
+export const getTransferTransaction = (
+  recipient: Address,
+  mosaicId: MosaicId,
+  amount: number,
+  message: string = '',
+  networkType: NetworkType = NetworkType.TEST_NET,
+  maxFee: number = 30000,
+): TransferTransaction => {
+  return TransferTransaction.create(
+    Deadline.create(1573430400),
+    recipient,
+    [new Mosaic(mosaicId, UInt64.fromUint(amount))],
+    PlainMessage.create(message),
+    networkType,
+    UInt64.fromUint(maxFee),
+  )
+}
+
+/**
  * Prepare a contract in the form of an aggregate
  * transaction wrapper including \a transactions.
  *
- * @param   {Transaction[]}   transactions
- * @return  {AggregateTransaction}
+ * @param   Transaction[]   transactions
+ * @return  AggregateTransaction
  */
 export const getContract = (
   transactions: Transaction[],
