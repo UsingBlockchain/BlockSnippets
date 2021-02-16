@@ -114,7 +114,6 @@ class MiniSupplyChain {
 export class CreateInputs extends SnippetInputs {
   @option({
     flag: 'n',
-    required: true,
     description: 'The company name',
   })
   name: string;

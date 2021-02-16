@@ -127,14 +127,12 @@ class MiniSupplyChain {
 export class SaleInputs extends SnippetInputs {
   @option({
     flag: 'n',
-    required: true,
     description: 'The company name',
   })
   name: string;
 
   @option({
     flag: 'p',
-    required: true,
     description: 'The product SKU (product identifier)',
   })
   sku: string;
