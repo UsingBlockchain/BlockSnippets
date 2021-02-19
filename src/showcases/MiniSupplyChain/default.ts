@@ -14,7 +14,7 @@ export const description = `
 export const subcommands = [
   {
     name: 'Create',
-    brief: 'Tokenize your supply chain with Create and Symbol blockchain',
+    brief: 'Tokenize your supply chain with MiniSupplyChain and Symbol blockchain',
   },
   {
     name: 'Sale',

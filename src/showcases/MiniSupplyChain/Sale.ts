@@ -4,7 +4,6 @@
  */
 import {command, metadata, option} from 'clime';
 import chalk from 'chalk';
-import * as fs from 'fs';
 
 import { AggregateTransaction, MosaicId, Transaction, TransactionMapping } from 'symbol-sdk'
 import { MnemonicPassPhrase } from 'symbol-hd-wallets'
@@ -12,14 +11,15 @@ import { TransactionURI } from 'symbol-uri-scheme'
 
 import {OptionsResolver} from '../../kernel/OptionsResolver';
 import {Snippet, SnippetInputs} from '../../kernel/Snippet';
-import {description} from '../default'
+import {description} from './default'
 
 import {
   getAddress,
   getContract,
-  getMosaicCreationTransactions,
+  getSigner,
+  getTransferTransaction,
 } from '../../snippets/symbol/core'
-import * as env from '../../snippets/symbol/env'
+import * as env from '../../kernel/env'
 
 /**
  * The Product interface describes products
@@ -38,9 +38,9 @@ interface Product {
  * for which the supply chain will be digitalised.
  */
 const PRODUCTS: Product[] = [
-  {name: 'My awesome book', sku: 'UBC21-34560015-01', count: 100, price: 10},
-  {name: 'My other awesome book', sku: 'UBC21-34560015-02', count: 50, price: 20},
-  {name: 'My third awesome book', sku: 'UBC21-34560015-03', count: 10000, price: 5.99},
+  {name: 'My awesome book', sku: 'UBC21-34560015-01', count: 100, price: 10, tokenId: new MosaicId([0, 1])},
+  {name: 'My other awesome book', sku: 'UBC21-34560015-02', count: 50, price: 20, tokenId: new MosaicId([0, 2])},
+  {name: 'My third awesome book', sku: 'UBC21-34560015-03', count: 10000, price: 5.99, tokenId: new MosaicId([0, 3])},
 ]
 
 /**
@@ -80,47 +80,65 @@ class MiniSupplyChain {
   }
 
   /**
-   * Tokenize a list of products.
-   *
-   * @param   Product[]   products    The products that will be mapped with mosaics.
-   * @return  AggregateTransaction    The broadcastable signed transaction.
+   * Sell a tokenized product to a *random* buyer.
+   * 
+   * @param   string    sku     The product SKU.
+   * @return  SignedTransaction
    */
-  public tokenize(
-    products: Product[],
+  public sell(
+    sku: string
   ): AggregateTransaction {
+    // - Find product by SKU
+    const product = this.products.find((p, ix) => {
+      return p.sku === sku
+    })
 
-    // - All transactions will be bundled in one contract
-    let transactions: Transaction[] = []
+    // - Supply Chain Step #1: Send product to Transporter
+    const transport = getTransferTransaction(
+      getAddress(this.identities.get('transporter')),
+      product.tokenId,
+      1
+    )
 
-    // - Iterate all products to be tokenized
-    for (let i = 0, m = products.length; i < m; i++) {
+    // - Supply Chain Step #2: Transport product to *random* customer
+    const delivery = getTransferTransaction(
+      getAddress(MnemonicPassPhrase.createRandom()),
+      product.tokenId,
+      1
+    )
 
-      // - Create one mosaic per product
-      const innerTransactions = getMosaicCreationTransactions(
-        getAddress(this.identities.get('owner')),
-        products[i].count
-      );
-      transactions = transactions.concat(innerTransactions)
-    }
-
-    // - Setup our supply chain tokenization digital contract.
+    // - Setup our supply chain sales tracking digital contract
     //   A digital contract consists in one or many transactions
     //   that are all executed together (atomically).
 
-    return getContract(transactions);
+    return getContract([
+
+      // - Sign off #1: The company owner is whom signs off for step #1
+      transport.toAggregate(getSigner(this.identities.get('owner')).publicAccount),
+
+      // - Sign off #2: The logistics transporter is whom signs off for step #2
+      delivery.toAggregate(getSigner(this.identities.get('transporter')).publicAccount)
+
+    ]);
   }
 }
 
-export class CreateInputs extends SnippetInputs {
+export class SaleInputs extends SnippetInputs {
   @option({
     flag: 'n',
     description: 'The company name',
   })
   name: string;
+
+  @option({
+    flag: 'p',
+    description: 'The product SKU (product identifier)',
+  })
+  sku: string;
 }
 
 @command({
-  description: 'Tokenize your supply chain with Create and Symbol blockchain',
+  description: 'Track the sale of a product in your tokenized supply chain with Symbol blockchain',
 })
 export default class extends Snippet {
 
@@ -134,7 +152,7 @@ export default class extends Snippet {
    * @return {string}
    */
   public getName(): string {
-    return 'Create'
+    return 'Sale'
   }
 
   /**
@@ -147,13 +165,13 @@ export default class extends Snippet {
   }
 
   /**
-   * Execution routine for the `Create` command.
+   * Execution routine for the `Sale` command.
    *
    * @param {PartialCosignatureInputs} inputs
    * @return {Promise<any>}
    */
   @metadata
-  async execute(inputs: CreateInputs) 
+  async execute(inputs: SaleInputs) 
   {
     console.log(description)
 
@@ -176,8 +194,15 @@ export default class extends Snippet {
         '\nEnter the company name: ');
     } catch (err) { this.error('Please, enter a company name.'); }
 
+    try {
+      inputs['sku'] = OptionsResolver(inputs,
+        'sku',
+        () => { return ''; },
+        '\nEnter the product SKU: ');
+    } catch (err) { this.error('Please, enter a product SKU.'); }
+
     // --------------------------------
-    // STEP 3: Execute Contract Actions
+    // STEP 2: Execute Contract Actions
     // --------------------------------
 
     // sign transaction and broadcast
@@ -204,7 +229,7 @@ export default class extends Snippet {
     // - execute snippet
     return new Promise((resolve, reject) => {
 
-      const digitalContract: AggregateTransaction = digitalSupplyChain.tokenize(PRODUCTS)
+      const digitalContract: AggregateTransaction = digitalSupplyChain.sell(inputs['sku'])
 
       console.log(chalk.yellow('Transaction URI: ') + chalk.yellow((new TransactionURI(
         digitalContract.serialize(),

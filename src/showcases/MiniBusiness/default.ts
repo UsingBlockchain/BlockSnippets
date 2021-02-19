@@ -7,15 +7,13 @@ export const description = `
      (o o)               (o o) 
     (  V  ) UBC Digital (  V  )
     --m-m-----------------m-m--
+    ------  DigiBusiness ------
+    --m-m-----------------m-m--
 `;
 
 export const subcommands = [
   {
-    name: 'ExecuteSnippet',
-    brief: 'Disposable Smart Snippet used in UBC:Digital Magazine',
-  },
-  {
-    name: 'MiniSupplyChain',
-    brief: 'Digital Supply Chain Smart Snippet used in UBC:Digital Magazine',
+    name: 'Governance',
+    brief: 'Setup distributed governance schemes for your business with DigiBusiness and Symbol blockchain (https://ubc.digital)',
   }
 ];

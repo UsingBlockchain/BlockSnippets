@@ -6,7 +6,9 @@ import chalk from 'chalk'
 import {
   Account,
   Address,
+  AddressAliasTransaction,
   AggregateTransaction,
+  AliasAction,
   Deadline,
   Mosaic,
   MosaicDefinitionTransaction,
@@ -15,13 +17,17 @@ import {
   MosaicSupplyChangeAction,
   MosaicSupplyChangeTransaction,
   MosaicNonce,
+  NamespaceId,
+  NamespaceRegistrationTransaction,
   NetworkType,
   PlainMessage,
+  PublicAccount,
   Transaction,
   TransferTransaction,
   UInt64,
 } from 'symbol-sdk'
 import { ExtendedKey, MnemonicPassPhrase, Network, Wallet } from 'symbol-hd-wallets'
+import * as env from '../../kernel/env'
 
 /**
  * Display usage information.
@@ -194,10 +200,110 @@ export const getTransferTransaction = (
 }
 
 /**
+ * Returns a prepared transaction for the creation
+ * of names on a Symbol network.
+ *
+ * @param   string        namespaceName 
+ * @param   number        duration 
+ * @param   NetworkType   networkType   (Optional) The symbol network type.
+ * @param   number        maxFee        (Optional) The symbol network transaction fee.
+ * @return  NamespaceRegistrationTransaction
+ */
+export const getNamespaceRegistrationTransaction = (
+  namespaceName: string,
+  duration: number,
+  networkType: NetworkType = NetworkType.TEST_NET,
+  maxFee: number = 30000,
+): NamespaceRegistrationTransaction => {
+  const isSub = /\.{1,}/.test(namespaceName);
+  const parts = namespaceName.split('.');
+  const parent = parts.slice(0, parts.length-1).join('.');
+  const current = parts.pop();
+
+  if (isSub === true) {
+    // sub namespace level[i]
+    return NamespaceRegistrationTransaction.createSubNamespace(
+      Deadline.create(1573430400),
+      current,
+      parent,
+      networkType,
+      UInt64.fromUint(maxFee)
+    );
+  }
+
+  // root namespace
+  return NamespaceRegistrationTransaction.createRootNamespace(
+    Deadline.create(1573430400),
+    namespaceName,
+    UInt64.fromUint(duration),
+    networkType,
+    UInt64.fromUint(maxFee)
+  )
+}
+
+/**
+ * Returns a prepared transaction for the aliasing
+ * of addresses on a Symbol network.
+ *
+ * @param   string        alias 
+ * @param   Address       address 
+ * @param   NetworkType   networkType   (Optional) The symbol network type.
+ * @param   number        maxFee        (Optional) The symbol network transaction fee.
+ * @return  NamespaceRegistrationTransaction
+ */
+export const getAddressAliasTransaction = (
+  alias: string,
+  address: Address,
+  networkType: NetworkType = NetworkType.TEST_NET,
+  maxFee: number = 30000,
+): AddressAliasTransaction => {
+  return AddressAliasTransaction.create(
+    Deadline.create(1573430400),
+    AliasAction.Link,
+    new NamespaceId(alias),
+    address,
+    networkType,
+    UInt64.fromUint(maxFee)
+  );
+}
+
+/**
+ * Returns multiple prepared transactions including:
+ * - NamespaceRegistrationTransactions for names and children.
+ * - AddressAliasTransaction for aliasing accounts on-chain.
+ *
+ * @param   string          alias 
+ * @param   PublicAccount   publicAccount 
+ * @return  Transaction[]
+ */
+export const getIdentityAliasTransactions = (
+  alias: string,
+  publicAccount: PublicAccount,
+): Transaction[] => {
+  const aliasParts = alias.split('.');
+  if (aliasParts.length > 3 || !alias.match(/^[a-z0-9-]*/)) {
+    throw 'Invalid namespace name "' + alias + '", maximum 3 levels allowed (separated by dots).'
+  }
+
+  let registerTxes = [];
+  for (let i = 0; i < aliasParts.length; i++) {
+    const fullName = i === 0 ? aliasParts[0] : aliasParts.slice(0, i+1).join('.');
+
+    // create current level namespace registration transaction
+    const registerTx = getNamespaceRegistrationTransaction(fullName, env.BLOCKS_IN_ONE_YEAR);
+    registerTxes.push(registerTx.toAggregate(publicAccount));
+  }
+
+  return registerTxes
+}
+
+/**
  * Prepare a contract in the form of an aggregate
  * transaction wrapper including \a transactions.
  *
- * @param   Transaction[]   transactions
+ * @param   Transaction[]   transactions  The transactions to bundle as one contract.
+ * @param   NetworkType   networkType     (Optional) The symbol network type.
+ * @param   number        maxFee          (Optional) The symbol network transaction fee.
  * @return  AggregateTransaction
  */
 export const getContract = (
