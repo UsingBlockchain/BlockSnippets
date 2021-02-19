@@ -83,7 +83,7 @@ export class Identity extends KeyProvider {
       this.salt = binarySalt.toString('hex')
 
       // - Uses salted plaintext password to encrypt mnemonic phrase
-      this.seed = Crypto.encrypt(MnemonicPassPhrase.createRandom().toSeed(
+      this.encryptedSeed = Crypto.encrypt(MnemonicPassPhrase.createRandom().toSeed(
         saltedPw.toString('utf8')
       ).toString('hex'), saltedPw.toString('utf8'))
 
@@ -110,7 +110,7 @@ export class Identity extends KeyProvider {
     path: string = "m/44'/4343'/0'/0'/0'",
     networkType: NetworkType = NetworkType.TEST_NET,
   ): Account {
-    if (! this.seed.length) {
+    if (! this.encryptedSeed.length) {
       throw 'This identity cannot be unlocked.'
     }
 
@@ -129,7 +129,7 @@ export class Identity extends KeyProvider {
     }
 
     // - Unlock the BIP32 seed (encrypted with salted plaintext password)
-    const unlocked = Crypto.decrypt(this.seed, saltedPw.toString('utf8'))
+    const unlocked = Crypto.decrypt(this.encryptedSeed, saltedPw.toString('utf8'))
 
     // - read private key from seed
     const xkey = ExtendedKey.createFromSeed(unlocked, Network.CATAPULT)

@@ -65,8 +65,6 @@ export class Governance extends Concern {
       // shortcuts
       const identity = this.identities[i] as Identity
 
-      console.log("IDENTITY: ", identity)
-
       // - Ask for password input or read from `inputs`
       const unlocked = identity.unlock(PasswordResolver(
         inputs,
@@ -74,10 +72,12 @@ export class Governance extends Concern {
         '\nEnter the password for \'' + identity.name + '\': '
       ))
 
+      console.log(identity.name + " unlocked: ", unlocked.privateKey)
+
       // - Create namespace for identity alias on-chain
       // * - NamespaceRegistrationTransactions for names and children.
       // * - AddressAliasTransaction for aliasing accounts on-chain.
-      const innerTransactions = getIdentityAliasTransactions(identity.alias, unlocked.publicAccount)
+      const innerTransactions = getIdentityAliasTransactions(identity.alias.toLowerCase(), unlocked.publicAccount)
 
       // - Add transactions to contract
       transactions = transactions.concat(innerTransactions)

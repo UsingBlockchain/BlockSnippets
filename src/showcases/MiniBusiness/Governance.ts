@@ -9,7 +9,7 @@ import chalk from 'chalk';
 
 // Symbol from NEM dependencies
 import { AggregateTransaction, NetworkType } from 'symbol-sdk'
-import { QRCodeGenerator } from 'symbol-qr-library'
+import { QRCodeGenerator, QRCodeSettings } from 'symbol-qr-library'
 
 // in-package dependencies
 import * as env from '../../kernel/env'
@@ -23,7 +23,7 @@ import { Business } from './Repositories/Business'
 import { Backup } from './Repositories/Backup'
 import { Governance } from './Concerns/Governance'
 
-export class GovernInputs extends SnippetInputs {
+export class GovernanceInputs extends SnippetInputs {
   @option({
     flag: 'n',
     description: 'The company name',
@@ -35,6 +35,12 @@ export class GovernInputs extends SnippetInputs {
   description: 'Setup distributed governance schemes for your business with Symbol blockchain (https://ubc.digital)',
 })
 export default class extends Snippet {
+  /**
+   * Our backup instance
+   * @var Backup
+   */
+  protected backup: Backup
+
   /**
    * Our digital business instance
    * @var Business
@@ -51,26 +57,17 @@ export default class extends Snippet {
    * @return string
    */
   public getName(): string {
-    return 'Govern'
+    return 'Governance'
   }
 
   /**
-   * Returns whether the contract requires authentication
+   * Execution routine for the `Governance` command.
    *
-   * @return {boolean}
-   */
-  public requiresAuth(): boolean {
-    return false
-  }
-
-  /**
-   * Execution routine for the `Govern` command.
-   *
-   * @param GovernInputs inputs
+   * @param GovernanceInputs inputs
    * @return Promise<any>
    */
   @metadata
-  async execute(inputs: GovernInputs) 
+  async execute(inputs: GovernanceInputs) 
   {
     console.log(description)
 
@@ -94,12 +91,12 @@ export default class extends Snippet {
     } catch (err) { this.error('Please, enter a company name.'); }
 
     // - Try to re-create from backup
-    const backup = new Backup(inputs['name'])
+    this.backup = new Backup(inputs['name'])
     if (inputs['debug']) {
-      console.log('Using data file path: ' + chalk.yellow(backup.filepath))
+      console.log('Using data file path: ' + chalk.yellow(this.backup.filepath))
     }
 
-    if (! fs.existsSync(backup.filepath)) {
+    if (! fs.existsSync(this.backup.filepath)) {
       // - Reads identities from command line
       this.digitalBiz = new Business(
         inputs['name'],
@@ -108,12 +105,12 @@ export default class extends Snippet {
       )
 
       // - Make sure we have backed up sensitive data
-      backup.business = this.digitalBiz
-      backup.save()
+      this.backup.business = this.digitalBiz
+      this.backup.save()
     }
     else {
       // - Reads digital business from backup
-      this.digitalBiz = backup.business
+      this.digitalBiz = this.backup.business
     }
 
     // --------------------------------
@@ -140,13 +137,22 @@ export default class extends Snippet {
     // - Prepare digital contract, currently unsigned
     const digitalContract: AggregateTransaction = this.digitalBiz.dispatch(governanceConcern, inputs)
 
-    // - XXX add signature step if necessary
-
     // - Display QR Code for easier access to transaction
     const transactionQR = QRCodeGenerator.createTransactionRequest(
       digitalContract, NetworkType.TEST_NET, env.NETWORK_HASH
     )
 
-    return (async () => await transactionQR.toString())()
+    // - Save QR Code to PNG if necessary
+    let contractPath = this.backup.contractspath + '/Governance.png'
+    if (!fs.existsSync(contractPath)) {
+      let base64 = await transactionQR.toBase64(new QRCodeSettings('M', 50)).toPromise()
+      contractPath = this.backup.saveContract('Governance', base64)
+    }
+
+    // - Display digital contract
+    console.log('')
+    console.log(chalk.yellow("Digital Contract located at: ") + chalk.green(contractPath))
+    console.log('')
+    return process.exit(0)
   }
 }

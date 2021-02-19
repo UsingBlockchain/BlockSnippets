@@ -42,15 +42,6 @@ export default class extends Snippet {
   }
 
   /**
-   * Returns whether the contract requires authentication
-   *
-   * @return {boolean}
-   */
-  public requiresAuth(): boolean {
-    return false
-  }
-
-  /**
    * Execution routine for the `ExecuteSnippet` command.
    *
    * @param {PartialCosignatureInputs} inputs

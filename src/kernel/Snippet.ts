@@ -20,13 +20,6 @@ export abstract class Snippet extends Command {
   public abstract getName(): string
 
   /**
-   * Returns whether the contract requires authentication
-   *
-   * @return {boolean}
-   */
-  public abstract requiresAuth(): boolean
-
-  /**
    * Execute a snippet
    *
    * @param {SnippetInputs} inputs
