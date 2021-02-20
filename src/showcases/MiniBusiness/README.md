@@ -75,7 +75,7 @@ Digital identity for "Grégory Saive" (public): 62e2997d13cea0808ddad04b5a3284eb
 ```
 
 - This will create and backup one digital identity. To find backup files, have a look inside the data/ folder. In the example above, it would have created a file at: `./data/your-company-name.json`.
-- Additionally, digital identities can be mapped to <b>names<b> such that they can be addressed more easily.
+- Additionally, digital identities can be mapped to <b>names</b> such that they can be addressed more easily.
 - :warning: It is primordial that you understand the importance of storing your [mnemonic phrase](https://ubc.digital/dictionary/mnemonic-phrase) securely.
 
 2. Setup digital identities for your digital business:
