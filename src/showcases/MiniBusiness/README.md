@@ -48,23 +48,75 @@ $ alias BlockSnippets='./BlockSnippets'
 
 Note: This program was first showcased in: https://ubc.digital/how-to-use-blockchain-for-your-business/
 
-1. Setup a distributed governance scheme for your business (with 3 employees) :
+1. Create a digital business (with 1 employee) :
 
 ```bash
-$ BlockSnippets MiniBusiness Govern -n "Your Company Name"
-> Enter the 1st identity role: Owner
-> Enter the 1st identity name: Grégory Saive
+$ BlockSnippets MiniBusiness Create -n "Your Company Name"
 
-> Enter the 2nd identity role: Chief Marketing Officer
-> Enter the 2nd identity name: John D.
+      ___                 ___  
+     (o o)               (o o) 
+    (  V  ) UBC Digital (  V  )
+    --m-m-----------------m-m--
+    ------  MiniBusiness ------
+    --m-m-----------------m-m--
 
-> Enter the 3rd identity role: Chief Technology Officer
-> Enter the 3rd identity name: Pascal S.
+Enter the password for this digital business: easypassword
+
+Enter a name (i.e. a full name) for the identity #1:  Grégory Saive
+
+Enter an alias (i.e. a nickname) for the identity #1: evias
+
+Do you want to setup another identity? [y/n]: n
+
+Your digital business is located at: ./data/your-company-name.json
+
+Business governor: 2cec1fd011e9ebd5cc1dea8d56f4eee91d6e9b96620c36ecd8436acf0ddd1990
+Digital identity for "Grégory Saive" (public): 62e2997d13cea0808ddad04b5a3284eb2f5d1e55ebce61e71909d06961932c87
 ```
 
-- This will create and backup three digital identities. To find backup files, have a look inside the data/ folder.
+- This will create and backup one digital identity. To find backup files, have a look inside the data/ folder. In the example above, it would have created a file at: `./data/your-company-name.json`.
 - Additionally, digital identities can be mapped to <b>names<b> such that they can be addressed more easily.
 - :warning: It is primordial that you understand the importance of storing your [mnemonic phrase](https://ubc.digital/dictionary/mnemonic-phrase) securely.
+
+2. Setup digital identities for your digital business:
+
+```bash
+$ BlockSnippets MiniBusiness Identify -n "Your Company Name" -p easypassword
+
+      ___                 ___  
+     (o o)               (o o) 
+    (  V  ) UBC Digital (  V  )
+    --m-m-----------------m-m--
+    ------  MiniBusiness ------
+    --m-m-----------------m-m--
+
+
+Enter the password for 'Grégory Saive': easypassword
+
+Digital Contract located at: ./data/your-company-name-contracts/Identify.png
+```
+
+- This will create a digital contract stored in a folder just for your digital business at: `./data/your-company-name-contracts/Identify.png`.
+- The created contracts are represented as `image/png` files which contain QR Codes.
+
+3. Setup distributed governance schemes for your digital business:
+
+```bash
+$ BlockSnippets MiniBusiness Governance -n "Your Company Name" -p easypassword
+
+      ___                 ___  
+     (o o)               (o o) 
+    (  V  ) UBC Digital (  V  )
+    --m-m-----------------m-m--
+    ------  MiniBusiness ------
+    --m-m-----------------m-m--
+
+
+Digital Contract located at: ./data/your-company-name-contracts/Governance.png
+```
+
+- This will create a digital contract stored in a folder just for your digital business at: `./data/your-company-name-contracts/Governance.png`.
+- The created contracts are represented as `image/png` files which contain QR Codes.
 
 ## Donations / Pot de vin
 

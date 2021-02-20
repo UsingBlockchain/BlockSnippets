@@ -18,5 +18,12 @@ export abstract class KeyProvider {
    * mnemonic phrase in a storable format.
    * @var string
    */
-  protected seed: string
+  protected encryptedSeed: string
+
+  /**
+   * The public key (in hex format). This is the public key
+   * of the default derivation path at: m/44'/4343'/0'/0'/0'
+   * @var string
+   */
+  public publicKey: string
 }

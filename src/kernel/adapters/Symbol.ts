@@ -2,7 +2,6 @@
  * Part of BlockSnippets shared under LGPL-3.0
  * Copyright (C) 2021 Using Blockchain Ltd, Reg No.: 12658136, United Kingdom
  */
-import chalk from 'chalk'
 import {
   Account,
   Address,
@@ -17,6 +16,7 @@ import {
   MosaicSupplyChangeAction,
   MosaicSupplyChangeTransaction,
   MosaicNonce,
+  MultisigAccountModificationTransaction,
   NamespaceId,
   NamespaceRegistrationTransaction,
   NetworkType,
@@ -26,38 +26,21 @@ import {
   TransferTransaction,
   UInt64,
 } from 'symbol-sdk'
-import { ExtendedKey, MnemonicPassPhrase, Network, Wallet } from 'symbol-hd-wallets'
-import * as env from '../../kernel/env'
-
-/**
- * Display usage information.
- */
-export const usage = (): void => {
-  console.log('')
-  console.log(chalk.green('USAGE'))
-  console.log('')
-  console.log('  ' + chalk.bold('MiniSupplyChain <subcommand> [SKU]'))
-  console.log('')
-  console.log(chalk.green('SUBCOMMANDS'))
-  console.log('')
-  console.log('  ' + chalk.bold('create') + chalk.white(' - Creates the digital supply chain with tokenized products.'))
-  console.log('  ' + chalk.bold('sale') + chalk.white('   - Execute a sale of a product by SKU.'))
-  console.log('')
-}
+import { ExtendedKey, Network, Wallet } from 'symbol-hd-wallets'
+import * as env from '../env'
 
 /**
  * Create an account with mnemonic pass phrase and
  * return its public key in hexadecimal format.
  *
- * @param   MnemonicPassPhrase mnemonic   The mnemonic pass phrase (12,16,24 words)
- * @param   string             path       (Optional) The address derivation path.
+ * @param   string  seed    The BIP32 mnemonic seed (hexadecimal)
+ * @param   string  path    (Optional) The address derivation path.
  * @return  string  Returns the public key of the derived account.
  */
 export const getPublicKey = (
-  mnemonic: MnemonicPassPhrase,
+  seed: string,
   path: string = "m/44'/4343'/0'/0'/0'",
 ): string => {
-  const seed = mnemonic.toSeed().toString('hex')
   const xkey = ExtendedKey.createFromSeed(seed, Network.CATAPULT)
   const wallet = new Wallet(xkey)
   return wallet.getChildAccountPublicKey(
@@ -69,15 +52,14 @@ export const getPublicKey = (
  * Create an account with mnemonic pass phrase and
  * return its private key in hexadecimal format.
  *
- * @param   MnemonicPassPhrase mnemonic   The mnemonic pass phrase (12,16,24 words)
- * @param   string             path       (Optional) The address derivation path.
+ * @param   string  seed    The BIP32 mnemonic seed (hexadecimal)
+ * @param   string  path    (Optional) The address derivation path.
  * @return  string  Returns the private key of the derived account.
  */
 export const getPrivateKey = (
-  mnemonic: MnemonicPassPhrase,
+  seed: string,
   path: string = "m/44'/4343'/0'/0'/0'",
 ): string => {
-  const seed = mnemonic.toSeed().toString('hex')
   const xkey = ExtendedKey.createFromSeed(seed, Network.CATAPULT)
   const wallet = new Wallet(xkey)
   return wallet.getChildAccountPrivateKey(
@@ -89,16 +71,18 @@ export const getPrivateKey = (
  * Create an account address around \a mnemonic
  * for network type \a networkType.
  *
- * @param   MnemonicPassPhrase  mnemonic      The mnemonic pass phrase (12,16,24 words)
- * @param   NetworkType         networkType   The symbol network type.
- * @return  Address             The address of said account.
+ * @param   string          seed          The BIP32 mnemonic seed (hexadecimal)
+ * @param   string          path          (Optional) The address derivation path.
+ * @param   NetworkType     networkType   The symbol network type.
+ * @return  Address         The address of said account.
  */
 export const getAddress = (
-  mnemonic: MnemonicPassPhrase,
+  seed: string,
+  path: string = "m/44'/4343'/0'/0'/0'",
   networkType: NetworkType = NetworkType.TEST_NET
 ): Address => {
   return Address.createFromPublicKey(
-    getPublicKey(mnemonic),
+    getPublicKey(seed, path),
     networkType,
   )
 }
@@ -108,16 +92,18 @@ export const getAddress = (
  * for network type \a networkType.
  *
  * @warn    This method returns sensitive information.
- * @param   MnemonicPassPhrase  mnemonic      The mnemonic pass phrase (12,16,24 words)
- * @param   NetworkType         networkType   The symbol network type.
- * @return  Account             The sensitive information of an account (including its' private key).
+ * @param   string          seed          The BIP32 mnemonic seed (hexadecimal)
+ * @param   string          path          (Optional) The address derivation path.
+ * @param   NetworkType     networkType   The symbol network type.
+ * @return  Account         The sensitive information of an account (including its' private key).
  */
 export const getSigner = (
-  mnemonic: MnemonicPassPhrase,
+  seed: string,
+  path: string = "m/44'/4343'/0'/0'/0'",
   networkType: NetworkType = NetworkType.TEST_NET,
 ): Account => {
   return Account.createFromPrivateKey(
-    getPrivateKey(mnemonic),
+    getPrivateKey(seed, path),
     networkType,
   );
 }
@@ -266,6 +252,31 @@ export const getAddressAliasTransaction = (
     UInt64.fromUint(maxFee)
   );
 }
+/**
+ * Returns a prepared transaction for the setup
+ * of multi-signature governance schemes.
+ *
+ * @param   string        alias 
+ * @param   Address       address 
+ * @param   NetworkType   networkType   (Optional) The symbol network type.
+ * @param   number        maxFee        (Optional) The symbol network transaction fee.
+ * @return  NamespaceRegistrationTransaction
+ */
+export const getMultisigConvertTransaction = (
+  cosignatories: PublicAccount[],
+  networkType: NetworkType = NetworkType.TEST_NET,
+  maxFee: number = 30000,
+): MultisigAccountModificationTransaction => {
+  return MultisigAccountModificationTransaction.create(
+    Deadline.create(1573430400),
+    cosignatories.length > 2 ? cosignatories.length - 1 : cosignatories.length,
+    cosignatories.length > 1 ? cosignatories.length - 1 : cosignatories.length,
+    cosignatories.map(c => c.address),
+    [],
+    networkType,
+    UInt64.fromUint(maxFee)
+  );
+}
 
 /**
  * Returns multiple prepared transactions including:
@@ -289,12 +300,17 @@ export const getIdentityAliasTransactions = (
   for (let i = 0; i < aliasParts.length; i++) {
     const fullName = i === 0 ? aliasParts[0] : aliasParts.slice(0, i+1).join('.');
 
-    // create current level namespace registration transaction
+    // - Create current level namespace registration transaction
     const registerTx = getNamespaceRegistrationTransaction(fullName, env.BLOCKS_IN_ONE_YEAR);
     registerTxes.push(registerTx.toAggregate(publicAccount));
   }
 
-  return registerTxes
+  // - Add alias transaction to add alias on-chain
+  registerTxes = registerTxes.concat([getAddressAliasTransaction(
+    alias, publicAccount.address
+  )])
+
+  return registerTxes.map(t => t.toAggregate(publicAccount))
 }
 
 /**

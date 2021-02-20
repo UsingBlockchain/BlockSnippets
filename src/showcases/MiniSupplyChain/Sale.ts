@@ -18,7 +18,7 @@ import {
   getContract,
   getSigner,
   getTransferTransaction,
-} from '../../snippets/symbol/core'
+} from '../../kernel/adapters/Symbol'
 import * as env from '../../kernel/env'
 
 /**
@@ -71,11 +71,14 @@ class MiniSupplyChain {
     public readonly products: Product[],
     public readonly debug: boolean = false
   ) {
+    // - Use "owner" mnemonic passphrase and convert to BIP32 seed
+    const ownerBIP32 = this.identities.get('owner').toSeed().toString('hex')
+
     // - Display supply chain tokenization
     if (this.debug) {
       console.log(chalk.yellow('Company name:         ') + company)
       console.log(chalk.yellow('Number of products:   ') + products.length)
-      console.log(chalk.yellow('Address of the Owner: ') + getAddress(this.identities.get('owner')).plain())
+      console.log(chalk.yellow('Address of the Owner: ') + getAddress(ownerBIP32).plain())
     }
   }
 
@@ -93,16 +96,21 @@ class MiniSupplyChain {
       return p.sku === sku
     })
 
+    // - Use mnemonic passphrases and convert to BIP32 seed
+    const ownerBIP32 = this.identities.get('owner').toSeed().toString('hex')
+    const destinationBIP32 = MnemonicPassPhrase.createRandom().toSeed().toString('hex')
+    const transporterBIP32 = this.identities.get('transporter').toSeed().toString('hex')
+
     // - Supply Chain Step #1: Send product to Transporter
     const transport = getTransferTransaction(
-      getAddress(this.identities.get('transporter')),
+      getAddress(transporterBIP32),
       product.tokenId,
       1
     )
 
     // - Supply Chain Step #2: Transport product to *random* customer
     const delivery = getTransferTransaction(
-      getAddress(MnemonicPassPhrase.createRandom()),
+      getAddress(destinationBIP32),
       product.tokenId,
       1
     )
@@ -114,10 +122,10 @@ class MiniSupplyChain {
     return getContract([
 
       // - Sign off #1: The company owner is whom signs off for step #1
-      transport.toAggregate(getSigner(this.identities.get('owner')).publicAccount),
+      transport.toAggregate(getSigner(ownerBIP32).publicAccount),
 
       // - Sign off #2: The logistics transporter is whom signs off for step #2
-      delivery.toAggregate(getSigner(this.identities.get('transporter')).publicAccount)
+      delivery.toAggregate(getSigner(transporterBIP32).publicAccount)
 
     ]);
   }

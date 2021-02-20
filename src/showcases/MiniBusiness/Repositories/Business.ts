@@ -11,6 +11,13 @@ import { Identity } from './Identity'
 import { SnippetInputs as CommandLineArguments } from '../../../kernel/Snippet';
 
 /**
+ * Type DigitalContract type defines a wrapper
+ * for transactions and is used at the runtime
+ * of concerns.
+ */
+export type DigitalContract = AggregateTransaction
+
+/**
  * The Business class defines a minimal
  * viable business configuration using NEM
  * and Symbol features to setup a distributed
@@ -27,10 +34,14 @@ export class Business {
   public static createFromBackup(
     backup: any
   ): Business {
-    const identities = backup.identities.map(
-      i => Identity.createFromBackup(i)
+    return new Business(
+      backup.name,
+      Identity.createFromBackup(backup.governor),
+      backup.identities.map(
+        i => Identity.createFromBackup(i)
+      ),
+      backup.debug
     )
-    return new Business(backup.name, identities, backup.debug)
   }
 
   /**
@@ -42,6 +53,7 @@ export class Business {
    */
   public constructor(
     public readonly name: string,
+    public governor: Identity,
     public identities: Identity[] = [],
     public readonly debug: boolean = false
   ) {
@@ -62,6 +74,7 @@ export class Business {
       name: this.name,
       debug: this.debug,
       identities: this.identities,
+      governor: this.governor,
     })
   }
 
@@ -71,12 +84,12 @@ export class Business {
    *
    * @param   Concern                 concern     The digital concern to execute.
    * @param   CommandLineArguments    inputs      The arguments for execution.
-   * @return  AggregateTransaction    A digital contract that can be signed.
+   * @return  DigitalContract         A digital contract that can be signed.
    */
   public dispatch(
     concern: Concern,
     inputs: CommandLineArguments,
-  ): AggregateTransaction {
+  ): DigitalContract {
     // - Execute the concern in context of \a inputs
     return concern.execute(inputs)
   }

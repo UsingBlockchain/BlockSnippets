@@ -7,13 +7,21 @@ export const description = `
      (o o)               (o o) 
     (  V  ) UBC Digital (  V  )
     --m-m-----------------m-m--
-    ------  DigiBusiness ------
+    ------  MiniBusiness ------
     --m-m-----------------m-m--
 `;
 
 export const subcommands = [
   {
+    name: 'Create',
+    brief: 'Create a digital business with MiniBusiness by Using Blockchain Ltd (https://ubc.digital)',
+  },
+  {
+    name: 'Identify',
+    brief: 'Setup digital identities for your digital business with MiniBusiness by Using Blockchain Ltd (https://ubc.digital)',
+  },
+  {
     name: 'Governance',
-    brief: 'Setup distributed governance schemes for your business with DigiBusiness and Symbol blockchain (https://ubc.digital)',
+    brief: 'Setup distributed governance schemes for your digital business with MiniBusiness by Using Blockchain Ltd (https://ubc.digital)',
   }
 ];

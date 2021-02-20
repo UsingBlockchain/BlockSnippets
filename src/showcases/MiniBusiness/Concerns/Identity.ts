@@ -5,37 +5,33 @@
 import { AggregateTransaction, Transaction } from 'symbol-sdk'
 
 import { Concern } from './Concern'
-import { Identity } from '../Repositories/Identity'
+import { Identity as IdentityRepository } from '../Repositories/Identity'
 
 import { SnippetInputs as CommandLineArguments } from '../../../kernel/Snippet';
 import { PasswordResolver } from '../Resolvers/PasswordResolver';
-import { IdentityResolver } from '../Resolvers/IdentityResolver';
 import {
   getContract,
-  getMultisigConvertTransaction,
-  getPublicKey,
+  getIdentityAliasTransactions,
 } from '../../../kernel/adapters/Symbol'
 
 /**
- * The Governance class describes an atomically executable
+ * The Profile class describes an atomically executable
  * digital concern.
  *
  * This concern is responsible for the creation of digital
- * contracts related to distributed governance.
+ * identities related to Symbol accounts.
  */
-export class Governance extends Concern {
+export class Identity extends Concern {
 
   /**
    * Creates a distributed governance concern where
    * \a identities *may* be involved.
    *
-   * @param   Identity[]   identities  Identities that may be involved when this concern is dispatched.
+   * @param   IdentityRepository[]   identities  Identities that may be involved when this concern is dispatched.
    * @return  Governance
    */
   public constructor(
-    private password: string,
-    protected identities: Identity[] = [],
-    protected governor: Identity = null,
+    protected identities: IdentityRepository[] = [],
   ) {
     super()
   }
@@ -60,21 +56,35 @@ export class Governance extends Concern {
       throw 'No identities configured. Please, add identities information first.'
     }
 
-    // - Creates co-signature to accept the distributed governance
-    // * - MultisigAccountModificationTransaction with all identities as cosignatories
-    const convertTransaction = getMultisigConvertTransaction(
-      this.identities.map(i => i.getPublicInfo())
-    )
+    // - All transactions will be bundled in one contract
+    let transactions: Transaction[] = []
+
+    // - Iterate all identities to be digitalised
+    for (let i = 0, m = this.identities.length; i < m; i++) {
+
+      // shortcuts
+      const identity = this.identities[i] as IdentityRepository
+
+      // - Ask for password input or read from `inputs`
+      const unlocked = identity.unlock(PasswordResolver(
+        inputs,
+        'password' + i,
+        '\nEnter the password for \'' + identity.name + '\': '
+      ))
+
+      // - Create namespace for identity alias on-chain
+      // * - NamespaceRegistrationTransactions for names and children.
+      // * - AddressAliasTransaction for aliasing accounts on-chain.
+      const innerTransactions = getIdentityAliasTransactions(identity.alias.toLowerCase(), unlocked.publicAccount)
+
+      // - Add transactions to contract
+      transactions = transactions.concat(innerTransactions)
+    }
 
     // - Setup our distributed governance digital contract.
     //   A digital contract consists in one or many transactions
     //   that are all executed together (atomically).
 
-    return getContract([
-
-      // - Sign off #1: The governor is whom signs off for the conversion
-      convertTransaction.toAggregate(this.governor.getPublicInfo()),
-
-    ]);
+    return getContract(transactions);
   }
 }

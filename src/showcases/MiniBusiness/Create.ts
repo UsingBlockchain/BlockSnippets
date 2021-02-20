@@ -7,37 +7,33 @@ const fs = require('fs')
 import { command, metadata, option } from 'clime';
 import chalk from 'chalk';
 
-// Symbol from NEM dependencies
-import { NetworkType } from 'symbol-sdk'
-import { QRCodeGenerator, QRCodeSettings } from 'symbol-qr-library'
-
 // in-package dependencies
-import * as env from '../../kernel/env'
 import { OptionsResolver } from '../../kernel/OptionsResolver';
 import { Snippet, SnippetInputs } from '../../kernel/Snippet';
 
 // in-snippet dependencies
 import { description } from './default'
+import { IdentityResolver } from './Resolvers/IdentityResolver';
 import { PasswordResolver } from './Resolvers/PasswordResolver';
-import { Business, DigitalContract } from './Repositories/Business'
+import { Business } from './Repositories/Business'
 import { Backup } from './Repositories/Backup'
-import { Governance } from './Concerns/Governance'
+import { Identity } from './Repositories/Identity'
 
-export class GovernanceInputs extends SnippetInputs {
+export class CreateInputs extends SnippetInputs {
   @option({
     flag: 'n',
-    description: 'The company name',
+    description: 'The name of the digital business to create.',
   })
   name: string;
   @option({
     flag: 'p',
-    description: 'The password to unlock a digital business.',
+    description: 'The password to unlock this digital business.',
   })
   password: string;
 }
 
 @command({
-  description: 'Setup distributed governance schemes for your digital business with MiniBusiness by Using Blockchain Ltd (https://ubc.digital)',
+  description: 'Create a digital business with MiniBusiness by Using Blockchain Ltd (https://ubc.digital)',
 })
 export default class extends Snippet {
   /**
@@ -62,17 +58,17 @@ export default class extends Snippet {
    * @return string
    */
   public getName(): string {
-    return 'Governance'
+    return 'Create'
   }
 
   /**
-   * Execution routine for the `Governance` command.
+   * Execution routine for the `Create` command.
    *
-   * @param GovernanceInputs inputs
+   * @param CreateInputs inputs
    * @return Promise<any>
    */
   @metadata
-  async execute(inputs: GovernanceInputs) 
+  async execute(inputs: CreateInputs) 
   {
     console.log(description)
 
@@ -105,17 +101,6 @@ export default class extends Snippet {
 
     // - Try to re-create from backup
     this.backup = new Backup(inputs['name'])
-    if (inputs['debug']) {
-      console.log('Using data file path: ' + chalk.yellow(this.backup.filepath))
-    }
-
-    if (! fs.existsSync(this.backup.filepath)) {
-      console.log(chalk.red('Cannot find digital business. Please, run the "Create" command first.'))
-      return process.exit(1)
-    }
-
-    // - Reads digital business from backup
-    this.digitalBiz = this.backup.business
 
     // --------------------------------
     // STEP 2: Execute Contract Actions
@@ -135,32 +120,35 @@ export default class extends Snippet {
     inputs: SnippetInputs,
   ): Promise<any> {
 
-    // - Configure governance scheme with identities
-    const governanceConcern: Governance = new Governance(
-      inputs['password'],
-      this.digitalBiz.identities,
-      this.digitalBiz.governor,
-    )
+    if (! fs.existsSync(this.backup.filepath)) {
 
-    // - Prepare digital contract, currently unsigned
-    const digitalContract: DigitalContract = this.digitalBiz.dispatch(governanceConcern, inputs)
+      // - Reads identities from command line
+      this.digitalBiz = new Business(
+        inputs['name'],
+        new Identity('governor', 'governor', inputs['password']),
+        IdentityResolver(inputs['password'], inputs, 'identities'),
+        inputs['debug'],
+      )
 
-    // - Display QR Code for easier access to transaction
-    const transactionQR = QRCodeGenerator.createTransactionRequest(
-      digitalContract, NetworkType.TEST_NET, env.NETWORK_HASH
-    )
-
-    // - Save QR Code to PNG if necessary
-    let contractPath = this.backup.contractspath + '/Governance.png'
-    if (!fs.existsSync(contractPath)) {
-      let base64 = await transactionQR.toBase64(new QRCodeSettings('M', 50)).toPromise()
-      contractPath = this.backup.saveContract('Governance', base64)
+      // - Make sure we have backed up sensitive data
+      this.backup.business = this.digitalBiz
+      this.backup.save()
+    }
+    else {
+      // - Reads digital business from backup
+      this.digitalBiz = this.backup.business
     }
 
-    // - Display digital contract
-    console.log('')
-    console.log(chalk.yellow("Digital Contract located at: ") + chalk.green(contractPath))
-    console.log('')
+    if (!('quiet' in inputs) || !inputs['quiet']) {
+      console.log('')
+      console.log(chalk.yellow('Your digital business is located at: ') + chalk.cyan(this.backup.filepath))
+      console.log('')
+      console.log(chalk.yellow('Business governor: ') + chalk.cyan(this.digitalBiz.governor.publicKey))
+      this.digitalBiz.identities.map(identity => {
+        console.log(chalk.yellow('Digital identity for "' + identity.name + '" (public): ') + chalk.cyan(identity.publicKey))
+      })
+    }
+
     return process.exit(0)
   }
 }

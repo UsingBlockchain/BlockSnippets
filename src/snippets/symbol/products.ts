@@ -5,11 +5,11 @@
 import chalk from 'chalk'
 import { Account, Address, NetworkType } from 'symbol-sdk'
 import { MnemonicPassPhrase } from 'symbol-hd-wallets'
-import { getContract, getMosaicCreationTransactions, getPrivateKey, getPublicKey } from './core'
+import { getContract, getMosaicCreationTransactions, getPrivateKey, getPublicKey } from '../../kernel/adapters/Symbol'
 
 //- Create account for Alice
 const alicePrivate = MnemonicPassPhrase.createRandom();
-const aliceAddress = Address.createFromPublicKey(getPublicKey(alicePrivate), NetworkType.TEST_NET);
+const aliceAddress = Address.createFromPublicKey(getPublicKey(alicePrivate.toSeed().toString('hex')), NetworkType.TEST_NET);
 
 //- Display information about Alice's account
 console.log('')
@@ -27,7 +27,7 @@ const contract = getContract(transactions);
 const networkHash = '57F7DA205008026C776CB6AED843393F04CD458E0AA2D9F1D5F31A402072B2D6';
 
 //- Sign transactions (locally)
-const signer = Account.createFromPrivateKey(getPrivateKey(alicePrivate), NetworkType.TEST_NET);
+const signer = Account.createFromPrivateKey(getPrivateKey(alicePrivate.toSeed().toString('hex')), NetworkType.TEST_NET);
 const signed = signer.sign(contract, networkHash);
 
 console.log('')

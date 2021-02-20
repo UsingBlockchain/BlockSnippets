@@ -3,10 +3,11 @@
  * Copyright (C) 2021 Using Blockchain Ltd, Reg No.: 12658136, United Kingdom
  */
 import sha256 from 'fast-sha256';
-import { Account, Crypto, NetworkType } from 'symbol-sdk'
+import { Account, Crypto, NetworkType, PublicAccount } from 'symbol-sdk'
 import { ExtendedKey, MnemonicPassPhrase, Network, Wallet } from 'symbol-hd-wallets'
 
-import {KeyProvider} from '../../../kernel/KeyProvider'
+import { KeyProvider } from '../../../kernel/KeyProvider'
+import { getPrivateKey, getPublicKey } from '../../../kernel/adapters/Symbol'
 
 /**
  * The Identity class describes digital identities
@@ -28,6 +29,13 @@ export class Identity extends KeyProvider {
   protected encryptedSeed: string
 
   /**
+   * The public key (in hex format). This is the public key
+   * of the default derivation path at: m/44'/4343'/0'/0'/0'
+   * @var string
+   */
+  public publicKey: string
+
+  /**
    * A hashed copy of the password.
    * @var string
    */
@@ -43,10 +51,11 @@ export class Identity extends KeyProvider {
     backup: Identity
   ): Identity {
     // - Reads basic information from identity
-    let identity = new Identity(backup.name, backup.alias, backup.title)
+    let identity = new Identity(backup.name, backup.alias)
     identity.salt = backup.salt
     identity.encryptedSeed = backup.encryptedSeed
     identity.passwordHash = backup.passwordHash
+    identity.publicKey = backup.publicKey
 
     // - Returns the prepared identity
     return identity
@@ -64,7 +73,6 @@ export class Identity extends KeyProvider {
   public constructor(
     public readonly name: string,
     public readonly alias: string,
-    public readonly title: string,
     //XXX if password omitted, should initialize to backup data (readonly)
     private password?: string,
   ) {
@@ -82,10 +90,17 @@ export class Identity extends KeyProvider {
       // - Stores salt in hexadecimal format
       this.salt = binarySalt.toString('hex')
 
-      // - Uses salted plaintext password to encrypt mnemonic phrase
-      this.encryptedSeed = Crypto.encrypt(MnemonicPassPhrase.createRandom().toSeed(
+      // - Create random mnemonic and store pubkey
+      const mnemonic = MnemonicPassPhrase.createRandom()
+      const pwdSeed  = mnemonic.toSeed(
         saltedPw.toString('utf8')
-      ).toString('hex'), saltedPw.toString('utf8'))
+      ).toString('hex')
+
+      // - Derive default account public key
+      this.publicKey = getPublicKey(pwdSeed, "m/44'/4343'/0'/0'/0'")
+
+      // - Uses salted plaintext password to encrypt mnemonic phrase
+      this.encryptedSeed = Crypto.encrypt(pwdSeed, saltedPw.toString('utf8'))
 
       // - Saves password hash to never store in plain text
       this.passwordHash = Buffer.from(sha256(saltedPw)).toString('hex')
@@ -93,6 +108,22 @@ export class Identity extends KeyProvider {
       // - Drops the plaintext password from the instance
       delete this.password
     }
+  }
+
+  /**
+   * Returns a `PublicAccount` object around the
+   * current instance's public key.
+   *
+   * @param   NetworkType   networkType   (Optional) The Symbol network type.
+   * @return  PublicAccount
+   */
+  public getPublicInfo(
+    networkType: NetworkType = NetworkType.TEST_NET,
+  ): PublicAccount {
+    return PublicAccount.createFromPublicKey(
+      this.publicKey,
+      networkType,
+    )
   }
 
   /**
@@ -132,10 +163,7 @@ export class Identity extends KeyProvider {
     const unlocked = Crypto.decrypt(this.encryptedSeed, saltedPw.toString('utf8'))
 
     // - read private key from seed
-    const xkey = ExtendedKey.createFromSeed(unlocked, Network.CATAPULT)
-    const wallet = new Wallet(xkey)
-    const privKey = wallet.getChildAccountPrivateKey(path)
-
+    const privKey = getPrivateKey(unlocked, path)
     return Account.createFromPrivateKey(
       privKey,
       networkType,

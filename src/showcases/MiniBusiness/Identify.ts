@@ -21,12 +21,12 @@ import { description } from './default'
 import { PasswordResolver } from './Resolvers/PasswordResolver';
 import { Business, DigitalContract } from './Repositories/Business'
 import { Backup } from './Repositories/Backup'
-import { Governance } from './Concerns/Governance'
+import { Identity } from './Concerns/Identity'
 
-export class GovernanceInputs extends SnippetInputs {
+export class IdentifyInputs extends SnippetInputs {
   @option({
     flag: 'n',
-    description: 'The company name',
+    description: 'The name of the digital business.',
   })
   name: string;
   @option({
@@ -37,7 +37,7 @@ export class GovernanceInputs extends SnippetInputs {
 }
 
 @command({
-  description: 'Setup distributed governance schemes for your digital business with MiniBusiness by Using Blockchain Ltd (https://ubc.digital)',
+  description: 'Setup digital identities for your digital business with MiniBusiness by Using Blockchain Ltd (https://ubc.digital)',
 })
 export default class extends Snippet {
   /**
@@ -62,17 +62,17 @@ export default class extends Snippet {
    * @return string
    */
   public getName(): string {
-    return 'Governance'
+    return 'Identify'
   }
 
   /**
-   * Execution routine for the `Governance` command.
+   * Execution routine for the `Identify` command.
    *
-   * @param GovernanceInputs inputs
+   * @param IdentifyInputs inputs
    * @return Promise<any>
    */
   @metadata
-  async execute(inputs: GovernanceInputs) 
+  async execute(inputs: IdentifyInputs) 
   {
     console.log(description)
 
@@ -135,15 +135,11 @@ export default class extends Snippet {
     inputs: SnippetInputs,
   ): Promise<any> {
 
-    // - Configure governance scheme with identities
-    const governanceConcern: Governance = new Governance(
-      inputs['password'],
-      this.digitalBiz.identities,
-      this.digitalBiz.governor,
-    )
+    // - Configure digital identity convern
+    const identityConcern: Identity = new Identity(this.digitalBiz.identities)
 
     // - Prepare digital contract, currently unsigned
-    const digitalContract: DigitalContract = this.digitalBiz.dispatch(governanceConcern, inputs)
+    const digitalContract: DigitalContract = this.digitalBiz.dispatch(identityConcern, inputs)
 
     // - Display QR Code for easier access to transaction
     const transactionQR = QRCodeGenerator.createTransactionRequest(
@@ -151,10 +147,10 @@ export default class extends Snippet {
     )
 
     // - Save QR Code to PNG if necessary
-    let contractPath = this.backup.contractspath + '/Governance.png'
+    let contractPath = this.backup.contractspath + '/Identify.png'
     if (!fs.existsSync(contractPath)) {
       let base64 = await transactionQR.toBase64(new QRCodeSettings('M', 50)).toPromise()
-      contractPath = this.backup.saveContract('Governance', base64)
+      contractPath = this.backup.saveContract('Identify', base64)
     }
 
     // - Display digital contract

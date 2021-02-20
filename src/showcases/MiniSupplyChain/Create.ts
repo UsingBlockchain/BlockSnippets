@@ -17,7 +17,7 @@ import {
   getAddress,
   getContract,
   getMosaicCreationTransactions,
-} from '../../snippets/symbol/core'
+} from '../../kernel/adapters/Symbol'
 import * as env from '../../kernel/env'
 
 /**
@@ -70,11 +70,14 @@ class MiniSupplyChain {
     public readonly products: Product[],
     public readonly debug: boolean = false
   ) {
+    // - Use "owner" mnemonic passphrase and convert to BIP32 seed
+    const ownerBIP32 = this.identities.get('owner').toSeed().toString('hex')
+
     // - Display supply chain tokenization
     if (this.debug) {
       console.log(chalk.yellow('Company name:         ') + this.company)
       console.log(chalk.yellow('Number of products:   ') + this.products.length)
-      console.log(chalk.yellow('Address of the Owner: ') + getAddress(this.identities.get('owner')).plain())
+      console.log(chalk.yellow('Address of the Owner: ') + getAddress(ownerBIP32).plain())
     }
   }
 
@@ -96,7 +99,7 @@ class MiniSupplyChain {
 
       // - Create one mosaic per product
       const innerTransactions = getMosaicCreationTransactions(
-        getAddress(this.identities.get('owner')),
+        getAddress(this.identities.get('owner').toSeed().toString('hex')),
         products[i].count
       );
       transactions = transactions.concat(innerTransactions)

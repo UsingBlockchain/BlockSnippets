@@ -12,10 +12,11 @@ import { Identity } from '../Repositories/Identity'
  * through the command line.
  */
 export const IdentityResolver = (
+  pass: string,
   options: any,
   key: string,
   readlineDependency?: any
-): any[] => {
+): Identity[] => {
 
   const readline = readlineDependency || readlineSync;
   const fields = {
@@ -37,18 +38,8 @@ export const IdentityResolver = (
       ? options[fields['alias']]
       : readline.question('\nEnter an alias (i.e. a nickname) for the identity #' + ix + ': ')
 
-    const title = options[fields['title']] !== undefined 
-      ? options[fields['title']]
-      : readline.question('\nEnter a job title (i.e. CTO) for the identity #' + ix + ':    ')
-
-    const pass = PasswordResolver(
-      options,
-      fields['pass'],
-      '\nEnter the password for the identity #' + ix + ': '
-    )
-
     // - Store as Identity to make use of encrypted data storage
-    identities.push(new Identity(name, alias, title, pass))
+    identities.push(new Identity(name, alias, pass))
 
     next = options[fields['next']] !== undefined 
       ? options[fields['next']]
