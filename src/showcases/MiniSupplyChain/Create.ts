@@ -4,7 +4,6 @@
  */
 import {command, metadata, option} from 'clime';
 import chalk from 'chalk';
-import * as fs from 'fs';
 
 import { AggregateTransaction, MosaicId, Transaction, TransactionMapping } from 'symbol-sdk'
 import { MnemonicPassPhrase } from 'symbol-hd-wallets'
@@ -12,14 +11,14 @@ import { TransactionURI } from 'symbol-uri-scheme'
 
 import {OptionsResolver} from '../../kernel/OptionsResolver';
 import {Snippet, SnippetInputs} from '../../kernel/Snippet';
-import {description} from '../default'
+import {description} from './default'
 
 import {
   getAddress,
   getContract,
   getMosaicCreationTransactions,
-} from '../../snippets/symbol/core'
-import * as env from '../../snippets/symbol/env'
+} from '../../kernel/adapters/Symbol'
+import * as env from '../../kernel/env'
 
 /**
  * The Product interface describes products
@@ -28,9 +27,9 @@ import * as env from '../../snippets/symbol/env'
 interface Product {
   name: string
   sku: string
-  count: number,
-  price: number,
-  tokenId?: MosaicId,
+  count: number
+  price: number
+  tokenId?: MosaicId
 }
 
 /**
@@ -71,11 +70,14 @@ class MiniSupplyChain {
     public readonly products: Product[],
     public readonly debug: boolean = false
   ) {
+    // - Use "owner" mnemonic passphrase and convert to BIP32 seed
+    const ownerBIP32 = this.identities.get('owner').toSeed().toString('hex')
+
     // - Display supply chain tokenization
     if (this.debug) {
-      console.log(chalk.yellow('Company name:         ') + company)
-      console.log(chalk.yellow('Number of products:   ') + products.length)
-      console.log(chalk.yellow('Address of the Owner: ') + getAddress(this.identities.get('owner')).plain())
+      console.log(chalk.yellow('Company name:         ') + this.company)
+      console.log(chalk.yellow('Number of products:   ') + this.products.length)
+      console.log(chalk.yellow('Address of the Owner: ') + getAddress(ownerBIP32).plain())
     }
   }
 
@@ -97,7 +99,7 @@ class MiniSupplyChain {
 
       // - Create one mosaic per product
       const innerTransactions = getMosaicCreationTransactions(
-        getAddress(this.identities.get('owner')),
+        getAddress(this.identities.get('owner').toSeed().toString('hex')),
         products[i].count
       );
       transactions = transactions.concat(innerTransactions)
@@ -177,7 +179,7 @@ export default class extends Snippet {
     } catch (err) { this.error('Please, enter a company name.'); }
 
     // --------------------------------
-    // STEP 3: Execute Contract Actions
+    // STEP 2: Execute Contract Actions
     // --------------------------------
 
     // sign transaction and broadcast

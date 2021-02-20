@@ -12,10 +12,14 @@ export const description = `
 export const subcommands = [
   {
     name: 'ExecuteSnippet',
-    brief: 'Disposable Smart Snippet used in UBC:Digital Magazine',
+    brief: 'Disposable Smart Snippet used in UBC Digital Magazine (https://ubc.digital)',
   },
   {
     name: 'MiniSupplyChain',
-    brief: 'Digital Supply Chain Smart Snippet used in UBC:Digital Magazine',
+    brief: 'Digital Supply Chain Smart Snippet used in UBC Digital Magazine (https://ubc.digital)',
+  },
+  {
+    name: 'MiniBusiness',
+    brief: 'Digital Business Smart Snippet used in UBC Digital Magazine (https://ubc.digital)',
   }
 ];

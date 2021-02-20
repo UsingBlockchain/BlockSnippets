@@ -5,11 +5,11 @@
 import chalk from 'chalk'
 import { Address, NetworkType } from 'symbol-sdk'
 import { MnemonicPassPhrase } from 'symbol-hd-wallets'
-import { getPublicKey } from './core'
+import { getPublicKey } from '../../kernel/adapters/Symbol'
 
 //- Create account for Alice
 export const alicePrivate = MnemonicPassPhrase.createRandom();
-export const aliceAddress = Address.createFromPublicKey(getPublicKey(alicePrivate), NetworkType.TEST_NET);
+export const aliceAddress = Address.createFromPublicKey(getPublicKey(alicePrivate.toSeed().toString('hex')), NetworkType.TEST_NET);
 
 //- Display information about Alice's account
 console.log('')
@@ -19,7 +19,7 @@ console.log('')
 
 //- Create account for Bob
 export const bobPrivate = MnemonicPassPhrase.createRandom();
-export const bobAddress = Address.createFromPublicKey(getPublicKey(bobPrivate), NetworkType.TEST_NET);
+export const bobAddress = Address.createFromPublicKey(getPublicKey(bobPrivate.toSeed().toString('hex')), NetworkType.TEST_NET);
 
 //- Display information about Bob's account
 console.log('')

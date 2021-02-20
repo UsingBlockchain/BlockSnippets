@@ -5,23 +5,20 @@
 import * as readlineSync from 'readline-sync';
 
 /**
- * Generic command line argument reader.
+ * Command line argument reader for passwords
  *
  * @param options 
  * @param key 
- * @param secondSource 
  * @param promptText 
  * @param readlineDependency
  * @return {any}
  */
-export const OptionsResolver = (
+export const PasswordResolver = (
   options: any,
   key: string,
-  secondSource: () => string | undefined,
   promptText: string,
   readlineDependency?: any
 ): any => {
   const readline = readlineDependency || readlineSync;
-  return options[key] !== undefined ? options[key] : (secondSource() 
-      || readline.question(promptText));
+  return options[key] !== undefined ? options[key] : readline.question(promptText);
 }
