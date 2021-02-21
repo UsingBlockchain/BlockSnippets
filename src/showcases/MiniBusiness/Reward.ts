@@ -21,9 +21,12 @@ import { description } from './default'
 import { PasswordResolver } from './Resolvers/PasswordResolver';
 import { Business, DigitalContract } from './Repositories/Business'
 import { Backup } from './Repositories/Backup'
-import { Identity } from './Concerns/Identity'
+import { Gamification } from './Concerns/Gamification'
+import { Product } from './Repositories/Product'
+import { Identity } from './Repositories/Identity'
+import { slugify } from '../../kernel/Helpers';
 
-export class IdentifyInputs extends SnippetInputs {
+export class RewardInputs extends SnippetInputs {
   @option({
     flag: 'n',
     description: 'The name of the digital business.',
@@ -34,10 +37,15 @@ export class IdentifyInputs extends SnippetInputs {
     description: 'The password to unlock a digital business.',
   })
   password: string;
+  @option({
+    flag: 'e',
+    description: 'The employee that will be rewarded (Sending an appreciation message).',
+  })
+  employee: string;
 }
 
 @command({
-  description: 'Setup digital identities for your digital business with MiniBusiness by Using Blockchain Ltd (https://ubc.digital)',
+  description: 'Reward an employee of your digital business with MiniBusiness by Using Blockchain Ltd (https://ubc.digital)',
 })
 export default class extends Snippet {
   /**
@@ -52,6 +60,12 @@ export default class extends Snippet {
    */
   protected digitalBiz: Business
 
+  /**
+   * Our digital products
+   * @var Product[]
+   */
+  protected products: Product[]
+
   constructor() {
       super();
   }
@@ -62,17 +76,17 @@ export default class extends Snippet {
    * @return string
    */
   public getName(): string {
-    return 'Identify'
+    return 'Reward'
   }
 
   /**
-   * Execution routine for the `Identify` command.
+   * Execution routine for the `Reward` command.
    *
-   * @param IdentifyInputs inputs
+   * @param RewardInputs inputs
    * @return Promise<any>
    */
   @metadata
-  async execute(inputs: IdentifyInputs) 
+  async execute(inputs: RewardInputs) 
   {
     console.log(description)
 
@@ -103,6 +117,13 @@ export default class extends Snippet {
       )
     } catch (err) { this.error('Please, enter a password.'); }
 
+    try {
+      inputs['employee'] = OptionsResolver(inputs,
+        'employee',
+        () => { return ''; },
+        '\nEnter the full name of the employee to reward: ');
+    } catch (err) { this.error('Please, enter an employee name.'); }
+
     // - Try to re-create from backup
     this.backup = new Backup(inputs['name'])
     if (inputs['debug']) {
@@ -119,6 +140,16 @@ export default class extends Snippet {
 
     // - Try to unlock the governor identity (validates password)
     this.digitalBiz.governor.unlock(inputs['password'])
+
+    // - Validate employee by name
+    if (-1 === this.digitalBiz.identities.findIndex(
+      i => i.name === inputs['employee']
+    )) {
+      const known = this.digitalBiz.identities
+      throw 'Employee could not be found. Should be one of: ' + known.map(i => {
+        return i.name
+      }).join(', ')
+    }
 
     // --------------------------------
     // STEP 2: Execute Contract Actions
@@ -138,11 +169,19 @@ export default class extends Snippet {
     inputs: SnippetInputs,
   ): Promise<any> {
 
-    // - Configure digital identity convern
-    const identityConcern: Identity = new Identity(this.digitalBiz.identities)
+    // - "Fetch" employee by name (not optimal ;)
+    const employeeIdx = this.digitalBiz.identities.findIndex(
+      i => i.name === inputs['employee']
+    )
+
+    // - Configure gamification concern
+    const gamificationConcern: Gamification = new Gamification(
+      this.digitalBiz.governor,
+      this.digitalBiz.identities[employeeIdx],
+    )
 
     // - Prepare digital contract, currently unsigned
-    const digitalContract: DigitalContract = this.digitalBiz.dispatch(identityConcern, inputs)
+    const digitalContract: DigitalContract = this.digitalBiz.dispatch(gamificationConcern, inputs)
 
     // - Display QR Code for easier access to transaction
     const transactionQR = QRCodeGenerator.createTransactionRequest(
@@ -150,10 +189,11 @@ export default class extends Snippet {
     )
 
     // - Save QR Code to PNG if necessary
-    let contractPath = this.backup.contractspath + '/Identify.png'
+    let contractName = 'Reward-' + slugify(inputs['employee']),
+        contractPath = this.backup.contractspath + '/' + contractName + '.png'
     if (!fs.existsSync(contractPath)) {
       let base64 = await transactionQR.toBase64(new QRCodeSettings('M', 50)).toPromise()
-      contractPath = this.backup.saveContract('Identify', base64)
+      contractPath = this.backup.saveContract(contractName, base64)
     }
 
     // - Display digital contract

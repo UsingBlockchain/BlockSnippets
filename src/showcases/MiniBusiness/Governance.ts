@@ -117,6 +117,9 @@ export default class extends Snippet {
     // - Reads digital business from backup
     this.digitalBiz = this.backup.business
 
+    // - Try to unlock the governor identity (validates password)
+    this.digitalBiz.governor.unlock(inputs['password'])
+
     // --------------------------------
     // STEP 2: Execute Contract Actions
     // --------------------------------
@@ -137,7 +140,6 @@ export default class extends Snippet {
 
     // - Configure governance scheme with identities
     const governanceConcern: Governance = new Governance(
-      inputs['password'],
       this.digitalBiz.identities,
       this.digitalBiz.governor,
     )

@@ -23,5 +23,13 @@ export const subcommands = [
   {
     name: 'Governance',
     brief: 'Setup distributed governance schemes for your digital business with MiniBusiness by Using Blockchain Ltd (https://ubc.digital)',
+  },
+  {
+    name: 'Tokenise',
+    brief: 'Setup digital assets as products for your digital business with MiniBusiness by Using Blockchain Ltd (https://ubc.digital)',
+  },
+  {
+    name: 'Reward',
+    brief: 'Reward an employee of your digital business with MiniBusiness by Using Blockchain Ltd (https://ubc.digital)',
   }
 ];

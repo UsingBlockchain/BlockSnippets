@@ -2,18 +2,15 @@
  * Part of BlockSnippets shared under LGPL-3.0
  * Copyright (C) 2021 Using Blockchain Ltd, Reg No.: 12658136, United Kingdom
  */
-import { AggregateTransaction, Transaction } from 'symbol-sdk'
+import { AggregateTransaction } from 'symbol-sdk'
 
 import { Concern } from './Concern'
 import { Identity } from '../Repositories/Identity'
 
 import { SnippetInputs as CommandLineArguments } from '../../../kernel/Snippet';
-import { PasswordResolver } from '../Resolvers/PasswordResolver';
-import { IdentityResolver } from '../Resolvers/IdentityResolver';
 import {
   getContract,
   getMultisigConvertTransaction,
-  getPublicKey,
 } from '../../../kernel/adapters/Symbol'
 
 /**
@@ -33,7 +30,6 @@ export class Governance extends Concern {
    * @return  Governance
    */
   public constructor(
-    private password: string,
     protected identities: Identity[] = [],
     protected governor: Identity = null,
   ) {

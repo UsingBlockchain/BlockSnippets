@@ -127,6 +127,7 @@ export default class extends Snippet {
         inputs['name'],
         new Identity('governor', 'governor', inputs['password']),
         IdentityResolver(inputs['password'], inputs, 'identities'),
+        [],
         inputs['debug'],
       )
 

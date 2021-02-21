@@ -5,33 +5,35 @@
 import { AggregateTransaction, Transaction } from 'symbol-sdk'
 
 import { Concern } from './Concern'
-import { Identity as IdentityRepository } from '../Repositories/Identity'
+import { Identity as IdentityModel } from '../Repositories/Identity'
+import { Product as ProductModel } from '../Repositories/Product'
 
 import { SnippetInputs as CommandLineArguments } from '../../../kernel/Snippet';
-import { PasswordResolver } from '../Resolvers/PasswordResolver';
 import {
   getContract,
-  getIdentityAliasTransactions,
+  getMosaicCreationTransactions,
 } from '../../../kernel/adapters/Symbol'
 
 /**
- * The Identity class describes an atomically executable
+ * The Tokenization class describes an atomically executable
  * digital concern.
  *
  * This concern is responsible for the creation of digital
- * identities related to Symbol accounts.
+ * products related to Symbol mosaics (smart assets).
  */
-export class Identity extends Concern {
+export class Tokenization extends Concern {
 
   /**
-   * Creates a distributed governance concern where
-   * \a identities *may* be involved.
+   * Creates a tokenization concern where
+   * \a products get digitalised.
    *
-   * @param   IdentityRepository[]   identities  Identities that may be involved when this concern is dispatched.
-   * @return  Governance
+   * @param   IdentityModel     owner     Owner of the on-chain assets (i.e. "governor").
+   * @param   ProductModel[]    products  Products that will be digitalised.
+   * @return  Tokenization
    */
   public constructor(
-    protected identities: IdentityRepository[] = [],
+    protected owner: IdentityModel,
+    protected products: ProductModel[],
   ) {
     super()
   }
@@ -51,33 +53,22 @@ export class Identity extends Concern {
   public execute(
     inputs: CommandLineArguments,
   ): AggregateTransaction {
-    // - Governance works with digital identities
-    if (! this.identities.length) {
-      throw 'No identities configured. Please, add identities information first.'
+    // - Tokenization works with digital products
+    if (! this.products.length) {
+      throw 'No products configured. Please, add products information first.'
     }
 
     // - All transactions will be bundled in one contract
     let transactions: Transaction[] = []
 
-    // - Iterate all identities to be digitalised
-    for (let i = 0, m = this.identities.length; i < m; i++) {
+    // - Iterate all products to be tokenized
+    for (let i = 0, m = this.products.length; i < m; i++) {
 
-      // shortcuts
-      const identity = this.identities[i] as IdentityRepository
-
-      // - Ask for password input or read from `inputs`
-      const unlocked = identity.unlock(PasswordResolver(
-        inputs,
-        'password' + i,
-        '\nEnter the password for \'' + identity.name + '\': '
-      ))
-
-      // - Create namespace for identity alias on-chain
-      // * - NamespaceRegistrationTransactions for names and children.
-      // * - AddressAliasTransaction for aliasing accounts on-chain.
-      const innerTransactions = getIdentityAliasTransactions(identity.alias.toLowerCase(), unlocked.publicAccount)
-
-      // - Add transactions to contract
+      // - Create one mosaic per product
+      const innerTransactions = getMosaicCreationTransactions(
+        this.owner.getPublicInfo().address,
+        this.products[i].count
+      );
       transactions = transactions.concat(innerTransactions)
     }
 

@@ -169,8 +169,8 @@ export const getMosaicCreationTransactions = (
  */
 export const getTransferTransaction = (
   recipient: Address,
-  mosaicId: MosaicId,
-  amount: number,
+  mosaicId: MosaicId = null,
+  amount: number = 0,
   message: string = '',
   networkType: NetworkType = NetworkType.TEST_NET,
   maxFee: number = 30000,
@@ -178,7 +178,7 @@ export const getTransferTransaction = (
   return TransferTransaction.create(
     Deadline.create(1573430400),
     recipient,
-    [new Mosaic(mosaicId, UInt64.fromUint(amount))],
+    mosaicId === null ? [] : [new Mosaic(mosaicId, UInt64.fromUint(amount))],
     PlainMessage.create(message),
     networkType,
     UInt64.fromUint(maxFee),

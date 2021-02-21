@@ -19,11 +19,13 @@ import { Snippet, SnippetInputs } from '../../kernel/Snippet';
 // in-snippet dependencies
 import { description } from './default'
 import { PasswordResolver } from './Resolvers/PasswordResolver';
+import { ProductResolver } from './Resolvers/ProductResolver';
 import { Business, DigitalContract } from './Repositories/Business'
 import { Backup } from './Repositories/Backup'
-import { Identity } from './Concerns/Identity'
+import { Tokenization } from './Concerns/Tokenization'
+import { Product } from './Repositories/Product'
 
-export class IdentifyInputs extends SnippetInputs {
+export class TokeniseInputs extends SnippetInputs {
   @option({
     flag: 'n',
     description: 'The name of the digital business.',
@@ -37,7 +39,7 @@ export class IdentifyInputs extends SnippetInputs {
 }
 
 @command({
-  description: 'Setup digital identities for your digital business with MiniBusiness by Using Blockchain Ltd (https://ubc.digital)',
+  description: 'Setup digital assets as products for your digital business with MiniBusiness by Using Blockchain Ltd (https://ubc.digital)',
 })
 export default class extends Snippet {
   /**
@@ -52,6 +54,12 @@ export default class extends Snippet {
    */
   protected digitalBiz: Business
 
+  /**
+   * Our digital products
+   * @var Product[]
+   */
+  protected products: Product[]
+
   constructor() {
       super();
   }
@@ -62,17 +70,17 @@ export default class extends Snippet {
    * @return string
    */
   public getName(): string {
-    return 'Identify'
+    return 'Tokenise'
   }
 
   /**
-   * Execution routine for the `Identify` command.
+   * Execution routine for the `Tokenise` command.
    *
-   * @param IdentifyInputs inputs
+   * @param TokeniseInputs inputs
    * @return Promise<any>
    */
   @metadata
-  async execute(inputs: IdentifyInputs) 
+  async execute(inputs: TokeniseInputs) 
   {
     console.log(description)
 
@@ -120,6 +128,16 @@ export default class extends Snippet {
     // - Try to unlock the governor identity (validates password)
     this.digitalBiz.governor.unlock(inputs['password'])
 
+    // - Asks for products information
+    if (! this.digitalBiz.products.length) {
+      this.products = ProductResolver(inputs, 'products')
+
+      // - Update backup file
+      this.digitalBiz.products = this.products
+      this.backup.business = this.digitalBiz
+      this.backup.save()
+    }
+
     // --------------------------------
     // STEP 2: Execute Contract Actions
     // --------------------------------
@@ -138,11 +156,14 @@ export default class extends Snippet {
     inputs: SnippetInputs,
   ): Promise<any> {
 
-    // - Configure digital identity convern
-    const identityConcern: Identity = new Identity(this.digitalBiz.identities)
+    // - Configure tokenization concern
+    const tokenizationConcern: Tokenization = new Tokenization(
+      this.digitalBiz.governor,
+      this.digitalBiz.products,
+    )
 
     // - Prepare digital contract, currently unsigned
-    const digitalContract: DigitalContract = this.digitalBiz.dispatch(identityConcern, inputs)
+    const digitalContract: DigitalContract = this.digitalBiz.dispatch(tokenizationConcern, inputs)
 
     // - Display QR Code for easier access to transaction
     const transactionQR = QRCodeGenerator.createTransactionRequest(
@@ -150,10 +171,10 @@ export default class extends Snippet {
     )
 
     // - Save QR Code to PNG if necessary
-    let contractPath = this.backup.contractspath + '/Identify.png'
+    let contractPath = this.backup.contractspath + '/Tokenise.png'
     if (!fs.existsSync(contractPath)) {
       let base64 = await transactionQR.toBase64(new QRCodeSettings('M', 50)).toPromise()
-      contractPath = this.backup.saveContract('Identify', base64)
+      contractPath = this.backup.saveContract('Tokenise', base64)
     }
 
     // - Display digital contract

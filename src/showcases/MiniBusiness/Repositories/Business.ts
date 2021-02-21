@@ -7,6 +7,7 @@ import { AggregateTransaction } from 'symbol-sdk'
 import chalk from 'chalk';
 import { Concern } from '../Concerns/Concern';
 import { Identity } from './Identity'
+import { Product } from './Product'
 
 import { SnippetInputs as CommandLineArguments } from '../../../kernel/Snippet';
 
@@ -37,9 +38,10 @@ export class Business {
     return new Business(
       backup.name,
       Identity.createFromBackup(backup.governor),
-      backup.identities.map(
+      backup.identities ? backup.identities.map(
         i => Identity.createFromBackup(i)
-      ),
+      ) : [],
+      backup.products ? backup.products : [],
       backup.debug
     )
   }
@@ -55,6 +57,7 @@ export class Business {
     public readonly name: string,
     public governor: Identity,
     public identities: Identity[] = [],
+    public products: Product[] = [],
     public readonly debug: boolean = false
   ) {
     // - Display debug information
@@ -73,8 +76,9 @@ export class Business {
     return JSON.stringify({
       name: this.name,
       debug: this.debug,
-      identities: this.identities,
       governor: this.governor,
+      identities: this.identities,
+      products: this.products,
     })
   }
 
