@@ -21,5 +21,9 @@ export const subcommands = [
   {
     name: 'MiniBusiness',
     brief: 'Digital Business Smart Snippet used in UBC Digital Magazine (https://ubc.digital)',
+  },
+  {
+    name: 'MiniCommerce',
+    brief: 'Digital Commerce Smart Snippet used in UBC Digital Magazine (https://ubc.digital)',
   }
 ];

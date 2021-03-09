@@ -68,9 +68,11 @@ Donations can also be made with cryptocurrencies and will be used for running th
 
 ## Sponsor us
 
-    Paypal:    https://paypal.me/usingblockchainltd
-    Patreon:   https://patreon.com/usingblockchainltd
-    Github:    https://github.com/sponsors/UsingBlockchain
+| Platform | Sponsor Link |
+| --- | --- |
+| Paypal | [https://paypal.me/usingblockchainltd](https://paypal.me/usingblockchainltd) |
+| Patreon | [https://patreon.com/usingblockchainltd](https://patreon.com/usingblockchainltd) |
+| Github | [https://github.com/sponsors/UsingBlockchain](https://github.com/sponsors/UsingBlockchain) |
 
 ## Credits
 

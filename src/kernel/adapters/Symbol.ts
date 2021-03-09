@@ -169,7 +169,7 @@ export const getMosaicCreationTransactions = (
  */
 export const getTransferTransaction = (
   recipient: Address,
-  mosaicId: MosaicId = null,
+  mosaicId: MosaicId|NamespaceId = null,
   amount: number = 0,
   message: string = '',
   networkType: NetworkType = NetworkType.TEST_NET,
